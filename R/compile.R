@@ -1,16 +1,67 @@
 #' Options that can be passed to TreePPL compiler
 #'
-#' @returns A string with the output from the compiler's help <tpplc --help>
+#' @returns A data frame with the output from the compiler's help <tpplc --help>
 #'
 tp_compile_options <- function() {
 
-  #### under development ####
+  # Path to self contained #
+  if (Sys.info()["sysname"] == "Windows") {
+    # No self container for Windows, need to install it manually
+    "tpplc"
+  } else if (Sys.info()["sysname"] == "Linux") {
+    path_sc <- system.file("treeppl-linux", package = "treepplr")
+  } else {
+    # Mac OS have lots of different names
+    path_sc <- system.file("treeppl-mac", package = "treepplr")
+  }
 
-  # text from tpplc --help
-  return()
+  # check if treeppl is in the tmp
+  ft <- list.files("/tmp", full.names = TRUE)
+  ff <- ft[grepl("treeppl-", ft)]
 
+  # untar to tmp
+  if (length(ff) == 0) {
+    utils::untar(
+      list.files(
+        path = path_sc,
+        full.names = TRUE
+      ),
+      exdir = "/tmp"
+    )
+  }
+
+  # keep the path (this will also work if the 'if' statement above fails)
+  ft <- list.files("/tmp", full.names = TRUE)
+  ff <- ft[grepl("treeppl-", ft)]
+
+  # command
+  path_cmd <- paste0(ff, "//tpplc")
+  # treeppl options
+  cmd_opt <- system2(command = path_cmd, args = "--help", stdout = TRUE)
+
+  # Preparing the output #
+
+  # find the line containing "Options:"
+  x <- which(cmd_opt == "Options:")
+  # extract everything after that line
+  cmd_opt <- cmd_opt[(x + 1):length(cmd_opt)]
+  cmd_opt <- trimws(cmd_opt)
+  cmd_opt <- strsplit(cmd_opt, " {2,}", perl = TRUE)
+
+  opt_tab <- do.call(rbind, lapply(cmd_opt, function(x) {
+    # if there is no description, make it NA
+    if (length(x) == 1) x <- c(x, NA)
+    data.frame(
+      argument = x[1],
+      description = x[2],
+      stringsAsFactors = FALSE
+    )
+  }))
+
+  # fix arguments (delete everything that comes after the first space)
+  opt_tab$argument <- sub(" .*", "", opt_tab$argument)
+  return(opt_tab)
 }
-
 
 
 #' Compile a TreePPL model and create inference machinery
