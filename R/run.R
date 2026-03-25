@@ -60,8 +60,8 @@ tp_run_options <- function() {
 
 tp_run <- function(compiled_model,
                    data,
-                   n_runs = NULL,
-                   n_sweeps = NULL,
+                   n_runs = 1,
+                   n_sweeps = 1,
                    dir = NULL,
                    out_file_name = "out",
                    ...) {
@@ -70,15 +70,15 @@ tp_run <- function(compiled_model,
     stop("At least one of n_runs and n_sweeps needs to be passed")
   }
 
-  n_string <- ""
-  if(!is.null(n_runs)){
+  #n_string <- ""
+  #if(!is.null(n_runs)){
     #### change to --iterations when it's fixed in treeppl ####
-    n_string <- paste0(n_string, "--sweeps ", n_runs, " ")
-  }
+    #n_string <- paste0(n_string, "--sweeps ", n_runs, " ")
+  #}
 
-  if(!is.null(n_sweeps)){
-    n_string <- paste0(n_string, "--sweeps ", n_sweeps, " ")
-  }
+  #if(!is.null(n_sweeps)){
+    #n_string <- paste0(n_string, "--sweeps ", n_sweeps, " ")
+  #}
 
   if(is.null(dir)){
     dir_path <- tp_tempdir()
@@ -93,7 +93,7 @@ tp_run <- function(compiled_model,
   command <- paste("LD_LIBRARY_PATH= MCORE_LIBS=",
                    compiled_model,
                    data,
-                   n_string,
+                   #n_string,
                    paste(">", output_path)
                    )
   system(command)

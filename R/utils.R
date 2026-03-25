@@ -1,86 +1,83 @@
-# Platform-dependent treeppl self-contained installation
-installing_treeppl <- function() {
-
+#' Platform-dependent treeppl self-contained installation
+#' @description
+#' `tp_installing_treeppl` will search for the local version tpplc associate
+#' with the package. Will download it if it's not detected on the computer.
+#'
+#' @param download Will download the associate tpplc version in the dir next
+#' to your local treepplr installation if not present.
+#'
+#' @return The path for TreePPL compiler.
+#' @export
+tp_installing_treeppl <- function(download = TRUE) {
   if (Sys.getenv("TPPLC") != "") {
     tpplc_path <- Sys.getenv("TPPLC")
   } else{
-
-    tag <- tp_fp_fetch()
     if (Sys.info()['sysname'] == "Windows") {
       # No self container for Windows, need to install it manually
       "tpplc"
-    } else if(Sys.info()['sysname'] == "Linux") {
-      path <- system.file("treeppl-linux", package = "treepplr")
-      file_name <- paste0("treeppl-",substring(tag, 2))
-    } else {#Mac OS have a lot of different name
-      path <- system.file("treeppl-mac", package = "treepplr")
-      file_name <- paste0("treeppl-",substring(tag, 2))
+    } else {
+      path_treeppl <-
+        list.files(path = paste0(.libPaths()[1], "/treeppl/", TPPLC_VERSION),
+                   full.names = TRUE)
     }
     # Test if tpplc is already here
-    tpplc_path <- paste0("/tmp/",file_name,"/tpplc")
+    tpplc_path <- paste0("/tmp/treeppl-",TPPLC_VERSION,"/tpplc")
     if(!file.exists(tpplc_path)) {
-      utils::untar(list.files(path=path, full.names=TRUE),
-                   exdir="/tmp")
+      if(download && length(path_treeppl) == 0) {
+        tag <- tp_fp_fetch()
+        path_treeppl <-
+          list.files(path = paste0(.libPaths()[1], "/treeppl/", TPPLC_VERSION),
+                     full.names = TRUE)
+      }
+      message("TreePPL initialisation ...please wait...")
+      utils::untar(path_treeppl, exdir="/tmp", verbose = FALSE)
+      message("TreePPL initialisation : Done")
     }
   }
   tpplc_path
 }
 
-
-# Fetch the latest version of treeppl
+# Fetch the associate version of TreePPL if needed
 tp_fp_fetch <- function() {
   if (Sys.info()["sysname"] == "Windows") {
     # no self container for Windows, need to install it manually
-    0.0
+    "-1"
   } else {
-    # get repo info
-    repo_info <- gh::gh("GET /repos/treeppl/treeppl/releases")
     # Check for Linux
     if (Sys.info()["sysname"] == "Linux") {
       # assets[[2]] because releases are in alphabetical order (1 = Mac, 2 = Linux)
-      asset <- repo_info[[1]]$assets[[2]]
-      folder_name <- "treeppl-linux"
+      name <- paste0("treeppl-",TPPLC_VERSION,"-x86_64-linux.tar.gz")
     } else {
-      asset <- repo_info[[1]]$assets[[1]]
-      folder_name <- "treeppl-mac"
+      name <- paste0("treeppl-",TPPLC_VERSION,"-aarch64-darwin.tar.gz")
     }
 
-    # online hash
-    online_hash <- asset$digest
-    # local hash
-    file_name <- list.files(path = system.file(folder_name, package = "treepplr"), full.names = TRUE)
+    url <- paste0("https://github.com/treeppl/treeppl/releases/download/v",
+                  TPPLC_VERSION,"/",name)
+    # local repository
+    file_name <- list.files(path = paste0(.libPaths()[1], "/treeppl/",
+                                          TPPLC_VERSION),
+                            full.names = TRUE)
     # download file if file_name is empty
     if (length(file_name) == 0) {
-      # create destination folder
-      dest_folder <- paste(system.file(package = "treepplr"), folder_name, sep = "/")
-      system(paste("mkdir", dest_folder))
+      # create destination folder if treeppl dir doesn't exist
+      dest_folder <- paste0(.libPaths()[1], "/treeppl")
+      system(paste("mkdir", dest_folder), ignore.stdout = FALSE,
+             ignore.stderr = FALSE)
+      # create destination folder if version dir doesn't exist
+      version_dir <- paste(dest_folder, TPPLC_VERSION, sep = "/")
+      system(paste("mkdir", version_dir), ignore.stdout = TRUE,
+             ignore.stderr = TRUE)
       # download
-      fn <- paste(dest_folder, asset$name, sep = "/")
+      fn <- paste(version_dir, name, sep = "/")
       curl::curl_download(
-        asset$browser_download_url,
+        url,
         destfile = fn,
         quiet = FALSE
       )
-    } else {
-      local_hash <- paste0("sha256:", cli::hash_file_sha256(file_name))
-      # compare local and online hash and download the file if they differ
-      if (!identical(local_hash, online_hash)) {
-        # remove old file
-        file.remove(file_name)
-        # download
-        fn <- paste(system.file(package = "treepplr"), folder_name, asset$name, sep = "/")
-        curl::curl_download(
-          asset$browser_download_url,
-          destfile = fn,
-          quiet = FALSE
-        )
-      }
     }
   }
-  repo_info[[1]]$tag_name
+  TPPLC_VERSION
 }
-
-
 
 #' Temporary directory for running treeppl
 #'
@@ -165,8 +162,8 @@ tp_find_model <- function(model_name) {
   # make sure you get the most recent version if you have more than one treeppl folder in the tmp
   version <- sort(version, decreasing = TRUE)[1]
 
-  res <- system(paste0("find /tmp/", version," -name ", model_name, ".tppl"),
-         intern = T, ignore.stderr = TRUE)
+  suppressWarnings(res <- system(paste0("find /tmp/", version," -name ", model_name, ".tppl"),
+         intern = T, ignore.stderr = TRUE))
 }
 
 # Find data for model_name
@@ -177,7 +174,7 @@ tp_find_data <- function(model_name) {
   # make sure you get the most recent version if you have more than one treeppl folder in the tmp
   version <- sort(version, decreasing = TRUE)[1]
 
-  system(paste0("find /tmp/", version ," -name testdata_", model_name, ".json"),
-         intern = T)
+  suppressWarnings(system(paste0("find /tmp/", version ," -name testdata_", model_name, ".json"),
+         intern = T))
 }
 

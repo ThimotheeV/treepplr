@@ -3,6 +3,7 @@
 export(tp_compile)
 export(tp_data)
 export(tp_expected_input)
+export(tp_installing_treeppl)
 export(tp_json_to_phylo)
 export(tp_map_tree)
 export(tp_model)

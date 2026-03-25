@@ -7,7 +7,7 @@
 tp_compile_options()
 }
 \value{
-A string with the output from the compiler's help <tpplc --help>
+A data frame with the output from the compiler's help <tpplc --help>
 }
 \description{
 Options that can be passed to TreePPL compiler

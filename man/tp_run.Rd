@@ -7,8 +7,8 @@
 tp_run(
   compiled_model,
   data,
-  n_runs = NULL,
-  n_sweeps = NULL,
+  n_runs = 1,
+  n_sweeps = 1,
   dir = NULL,
   out_file_name = "out",
   ...

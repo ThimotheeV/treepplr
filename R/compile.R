@@ -35,9 +35,10 @@ tp_compile_options <- function() {
   ff <- ft[grepl("treeppl-", ft)]
 
   # command
-  path_cmd <- paste0(ff, "//tpplc")
+  path_cmd <- paste0(ff, "/tpplc")
   # treeppl options
-  cmd_opt <- system2(command = path_cmd, args = "--help", stdout = TRUE)
+  cmd_opt <- system2(command = path_cmd, args = "--help",
+                     env= "LD_LIBRARY_PATH= MCORE_LIBS=", stdout = TRUE)
 
   # Preparing the output #
 
@@ -144,7 +145,7 @@ tp_compile <- function(model,
   options <- paste("--output", output_path, args_str)
 
   # Preparing the command line program
-  tpplc_path <- installing_treeppl()   #### move this? ####
+  tpplc_path <- tp_installing_treeppl()   #### move this? TV : Perfect place
   command <- paste(tpplc_path, model_file_name, musts, options)
 
   # Compile program
