@@ -22,7 +22,6 @@ options(rmarkdown.html_vignette.check_title = FALSE)
 
 ```{r setup}
 library(treepplr)
-treepplr::tp_installing_treeppl()
 ```
 
 ```{r, eval = FALSE}

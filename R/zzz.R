@@ -8,4 +8,5 @@
 
 .onLoad <- function(libname, pkgname){
   TPPLC_VERSION <<- "0.3"
+  tp_installing_treeppl(FALSE)
 }

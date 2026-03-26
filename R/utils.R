@@ -29,9 +29,11 @@ tp_installing_treeppl <- function(download = TRUE) {
           list.files(path = paste0(.libPaths()[1], "/treeppl/", TPPLC_VERSION),
                      full.names = TRUE)
       }
-      message("TreePPL initialisation ...please wait...")
-      utils::untar(path_treeppl, exdir="/tmp", verbose = FALSE)
-      message("TreePPL initialisation : Done")
+      if (length(path_treeppl) != 0) {
+        message("TreePPL initialisation ...please wait...")
+        utils::untar(path_treeppl, exdir="/tmp", verbose = FALSE)
+        message("TreePPL initialisation : Done")
+      }
     }
   }
   tpplc_path
@@ -128,10 +130,10 @@ sep <- function() {
 #' @export
 tp_model_library <- function() {
 
-  # take whatever treeppl version is in the tmp
-  fd <- list.files("/tmp", pattern = "treeppl", full.names = TRUE)
-  # make sure you get the most recent version if you have more than one treeppl folder in the tmp
-  fd <- sort(fd, decreasing = TRUE)[1]
+  # make sure you get the appropriate version if you have more than one treeppl folder in the tmp
+  fd <- list.files("/tmp",
+                   pattern = paste0("treeppl-", TPPLC_VERSION),
+                   full.names = TRUE)
   # go to the right treeppl folder, whatever it is called
   fd <- list.files(fd, pattern = "treeppl", full.names = TRUE)
   # add the rest of the path
@@ -156,25 +158,23 @@ tp_model_library <- function() {
 
 # Find model for model_name
 tp_find_model <- function(model_name) {
-
-  # take whatever treeppl version is in the tmp
-  version <- list.files("/tmp", pattern = "treeppl", full.names = FALSE)
-  # make sure you get the most recent version if you have more than one treeppl folder in the tmp
-  version <- sort(version, decreasing = TRUE)[1]
-
-  suppressWarnings(res <- system(paste0("find /tmp/", version," -name ", model_name, ".tppl"),
-         intern = T, ignore.stderr = TRUE))
+  tp_find(model_name, ".tppl")
 }
 
 # Find data for model_name
 tp_find_data <- function(model_name) {
+  tp_find(model_name, ".json")
+}
 
-  # take whatever treeppl version is in the tmp
-  version <- list.files("/tmp", pattern = "treeppl", full.names = FALSE)
-  # make sure you get the most recent version if you have more than one treeppl folder in the tmp
-  version <- sort(version, decreasing = TRUE)[1]
+tp_find <- function(model_name, ext) {
+  # make sure you get the appropriate version if you have more than one treeppl folder in the tmp
+  version <- list.files("/tmp",
+                   pattern = paste0("treeppl-", TPPLC_VERSION),
+                   full.names = TRUE)
 
-  suppressWarnings(system(paste0("find /tmp/", version ," -name testdata_", model_name, ".json"),
-         intern = T))
+  res <- list.files(version,
+                    full.names = TRUE,
+                    recursive = TRUE,
+                    pattern = paste0(model_name, ext))
 }
 

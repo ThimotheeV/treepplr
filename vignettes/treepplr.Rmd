@@ -23,7 +23,6 @@ options(rmarkdown.html_vignette.check_title = FALSE)
 
 ```{r setup, echo=FALSE}
 library(treepplr)
-treepplr::tp_installing_treeppl()
 ```
 
 `treepplr` is an interface for using the TreePPL program. All functions start

@@ -32,7 +32,6 @@ First load the required R packages:
 
 ```{r setup}
 library(treepplr)
-treepplr::tp_installing_treeppl()
 library(dplyr)
 library(ggplot2)
 ```

@@ -8,10 +8,11 @@ cat(crayon::yellow("\nTest-data : Import and convert data.\n"))
 test_that("Test-data_1a : tp_data name", {
   cat("\tTest-data_1a \n")
 
-  version <- list.files("/tmp", pattern = "treeppl", full.names = FALSE)
-  version <- sort(version, decreasing = TRUE)[1]
+  version <- list.files("/tmp",
+                        pattern = paste0("treeppl-", TPPLC_VERSION),
+                        full.names = TRUE)
 
-  data_right <- system(paste0("find /tmp/", version," -name testdata_coin.json"),
+  data_right <- system(paste0("find ", version," -name testdata_coin.json"),
                        intern = T)
 
   data <- treepplr::tp_data("coin")

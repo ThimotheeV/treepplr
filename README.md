@@ -32,6 +32,14 @@ This will only install the R package. The TreePPL compiler will not be downloade
 
 ```
 [xx%] Downloaded xxxxxx bytes...
+TreePPL initialisation ...please wait...
+TreePPL initialisation : Done
+```
+
+But you can force this download and installation
+
+```
+treepplr::tp_installing_treeppl()
 ```
 
 In subsequent analyses, the TreePPL compiler will be called directly, skipping this step.

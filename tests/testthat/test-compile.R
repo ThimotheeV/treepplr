@@ -34,10 +34,11 @@ test_that("Test-compile_2a : tp_model model name", {
 
   model <- treepplr::tp_model("coin")
 
-  version <- list.files("/tmp", pattern = "treeppl", full.names = FALSE)
-  version <- sort(version, decreasing = TRUE)[1]
+  version <- list.files("/tmp",
+                        pattern = paste0("treeppl-", TPPLC_VERSION),
+                        full.names = TRUE)
 
-  model_right = system(paste0("find /tmp/", version," -name coin.tppl"),
+  model_right = system(paste0("find ", version," -name coin.tppl"),
                intern = T)
 
   names(model_right) <- "coin"
@@ -49,10 +50,11 @@ test_that("Test-compile_2a : tp_model model name", {
 test_that("Test-compile_2b : tp_model model path ", {
   cat("\tTest-compile_2b : tp_model\n")
 
-  version <- list.files("/tmp", pattern = "treeppl", full.names = FALSE)
-  version <- sort(version, decreasing = TRUE)[1]
+  version <- list.files("/tmp",
+                        pattern = paste0("treeppl-", TPPLC_VERSION),
+                        full.names = TRUE)
 
-  model_right = system(paste0("find /tmp/", version," -name coin.tppl"),
+  model_right = system(paste0("find ", version," -name coin.tppl"),
                        intern = T)
   model <- treepplr::tp_model(model_right)
   names(model_right) <- "custom_model"
