@@ -4,40 +4,9 @@
 #'
 tp_compile_options <- function() {
 
-  # Path to self contained #
-  if (Sys.info()["sysname"] == "Windows") {
-    # No self container for Windows, need to install it manually
-    "tpplc"
-  } else if (Sys.info()["sysname"] == "Linux") {
-    path_sc <- system.file("treeppl-linux", package = "treepplr")
-  } else {
-    # Mac OS have lots of different names
-    path_sc <- system.file("treeppl-mac", package = "treepplr")
-  }
-
-  # check if treeppl is in the tmp
-  ft <- list.files("/tmp", full.names = TRUE)
-  ff <- ft[grepl("treeppl-", ft)]
-
-  # untar to tmp
-  if (length(ff) == 0) {
-    utils::untar(
-      list.files(
-        path = path_sc,
-        full.names = TRUE
-      ),
-      exdir = "/tmp"
-    )
-  }
-
-  # keep the path (this will also work if the 'if' statement above fails)
-  ft <- list.files("/tmp", full.names = TRUE)
-  ff <- ft[grepl("treeppl-", ft)]
-
-  # command
-  path_cmd <- paste0(ff, "/tpplc")
+  tpplc_path <- tp_installing_treeppl()
   # treeppl options
-  cmd_opt <- system2(command = path_cmd, args = "--help",
+  cmd_opt <- system2(command = tpplc_path, args = "--help",
                      env= "LD_LIBRARY_PATH= MCORE_LIBS=", stdout = TRUE)
 
   # Preparing the output #
@@ -145,7 +114,7 @@ tp_compile <- function(model,
   options <- paste("--output", output_path, args_str)
 
   # Preparing the command line program
-  tpplc_path <- tp_installing_treeppl()   #### move this? TV : Perfect place
+  tpplc_path <- tp_installing_treeppl()
   command <- paste(tpplc_path, model_file_name, musts, options)
 
   # Compile program

@@ -6,9 +6,12 @@
 #' @param download Will download the associate tpplc version in the dir next
 #' to your local treepplr installation if not present.
 #'
+#' @param keep_previous Will download the associate tpplc version in the dir next
+#' to your local treepplr installation if not present.
+#'
 #' @return The path for TreePPL compiler.
 #' @export
-tp_installing_treeppl <- function(download = TRUE) {
+tp_installing_treeppl <- function(download = TRUE, keep_previous = FALSE) {
   if (Sys.getenv("TPPLC") != "") {
     tpplc_path <- Sys.getenv("TPPLC")
   } else{
@@ -24,7 +27,7 @@ tp_installing_treeppl <- function(download = TRUE) {
     tpplc_path <- paste0("/tmp/treeppl-",TPPLC_VERSION,"/tpplc")
     if(!file.exists(tpplc_path)) {
       if(download && length(path_treeppl) == 0) {
-        tag <- tp_fp_fetch()
+        tag <- tp_fp_fetch(keep_previous)
         path_treeppl <-
           list.files(path = paste0(.libPaths()[1], "/treeppl/", TPPLC_VERSION),
                      full.names = TRUE)
@@ -40,7 +43,7 @@ tp_installing_treeppl <- function(download = TRUE) {
 }
 
 # Fetch the associate version of TreePPL if needed
-tp_fp_fetch <- function() {
+tp_fp_fetch <- function(keep_previous = FALSE) {
   if (Sys.info()["sysname"] == "Windows") {
     # no self container for Windows, need to install it manually
     "-1"
@@ -61,8 +64,15 @@ tp_fp_fetch <- function() {
                             full.names = TRUE)
     # download file if file_name is empty
     if (length(file_name) == 0) {
+      if(!keep_previous) {
+
+      }
       # create destination folder if treeppl dir doesn't exist
       dest_folder <- paste0(.libPaths()[1], "/treeppl")
+      if(!keep_previous) {
+        system(paste("rm -rf", dest_folder), ignore.stdout = FALSE,
+               ignore.stderr = FALSE)
+      }
       system(paste("mkdir", dest_folder), ignore.stdout = FALSE,
              ignore.stderr = FALSE)
       # create destination folder if version dir doesn't exist

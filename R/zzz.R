@@ -6,7 +6,9 @@
 #version <- repo_info[[1]]$tag_name
 ##################
 
+#'@export
+TPPLC_VERSION <- "0.3"
+
 .onLoad <- function(libname, pkgname){
-  TPPLC_VERSION <<- "0.3"
-  tp_installing_treeppl(FALSE)
+  tp_installing_treeppl(download =  FALSE)
 }
