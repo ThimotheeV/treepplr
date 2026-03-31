@@ -1,0 +1,310 @@
+---
+title: 'TreePPL in R: Writing and Running Programs'
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{tuto}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+
+options(rmarkdown.html_vignette.check_title = FALSE)
+```
+
+Let’s load the treepplr, TreePPL and all others relevant packages on
+this R Markdown document. Markdown is a simple formatting syntax for
+authoring HTML, PDF, and MS Word documents. For more details on using R
+Markdown see <http://rmarkdown.rstudio.com>.
+
+```{r setup, echo=FALSE}
+library(treepplr)
+library(dplyr)
+library(ggplot2)
+```
+
+## Introduction
+
+`treepplr` is an interface for using the TreePPL program. All functions
+start with `tp_` to easily distinguish them from functions from other
+packages.
+
+For example, the following cell demonstrates a simple TreePPL program
+for simulating the flip of a fair coin:
+
+```{r}
+unfair_coin_model <- 
+  "model function flip() => Bool {
+  assume p ~ Bernoulli(0.7);
+  return p;
+}"
+no_data <- tp_data("coin") #ignore this line
+exe_path <- tp_compile(model = unfair_coin_model, 
+                       method = "smc-apf", 
+                       particles = 10)
+```
+
+In this example, a treeppl model is created, and the program is
+compiled. The argument particles=10 specifies the number of samples to
+generate when the program is executed.
+
+To run the TreePPL program, call the function `tp_run`. This executes
+the program and returns result in a structured list, which includes a
+samples attribute containing the generated samples. While samples may
+have different weights in more complex programs, they are equally
+weighted in this simple example. We will cover programs with weighted
+samples later.
+
+Here’s an example of how to use the compiled program:
+
+```{r, fig.height=5, fig.width=5}
+output_list <- tp_run(compiled_model = exe_path, data = no_data, n_sweeps = 1)
+result <- data.frame(valeur = unlist(output_list[[1]]$samples))
+ggplot(result, aes(x = valeur, fill = valeur)) +
+  geom_bar(width = 0.5) +
+  scale_fill_manual(values = c("TRUE" = "#2ecc71", "FALSE" = "#e74c3c")) +
+  theme_minimal() +
+  labs(title = "Coin repartion", x = "Values", y = "Count")
+```
+
+## Simple inference
+
+Small setup to make reading easy
+```{r}
+myplot <- function(df) {
+  ggplot(df, aes(x = samples, weight = weights)) +
+    geom_histogram(aes(y = after_stat(density)), 
+                   bins = 100, fill = "skyblue", color = "white") +
+    geom_density(color = "blue", linewidth = 1) +
+    theme_minimal()
+}
+
+compile_run_format <- function(model, data, particules) {
+  exe_path <- tp_compile(model = model, 
+                       method = "smc-apf", 
+                       particles = particules)
+  res <- tp_run(compiled_model = exe_path, data = data, n_sweeps = 1)
+
+  result <- data.frame(samples=unlist(res[[1]]$samples), 
+                     weights=exp(as.numeric(unlist(res[[1]]$weights))))
+  result
+}
+```
+
+### Coin model example
+
+```{r}
+coin1 <- 
+  "model function coin1() => Real {
+    assume p ~ Beta(2.0,2.0);
+    return p;
+}"
+
+result <- compile_run_format(coin1, no_data, 30000)
+
+myplot(result)
+```
+
+```{r}
+coin2 <- 
+  "model function coin2() => Real {
+    assume p ~ Beta(2.0,2.0);
+    observe true ~ Bernoulli(p);
+    return p;
+}"
+
+result <- compile_run_format(coin2, no_data, 30000)
+
+myplot(result)
+```
+
+```{r}
+coin3 <- 
+  "model function coin3() => Real {
+    assume p ~ Beta(2.0,2.0);
+    observe true ~ Bernoulli(p);
+    observe true ~ Bernoulli(p);
+    observe true ~ Bernoulli(p);
+    observe false ~ Bernoulli(p);
+    observe true ~ Bernoulli(p);
+    observe true ~ Bernoulli(p);
+    return p;
+}"
+
+result <- compile_run_format(coin3, no_data, 30000)
+
+myplot(result)
+```
+
+### Generalized Coin model
+
+```{r}
+coin <- 
+"model function coin(outcomes: Bool[]) => Real {
+  assume p ~ Uniform(0.0, 1.0);
+  for i in 1 to (length(outcomes)) {
+    observe outcomes[i] ~ Bernoulli(p);
+  }
+  return p;
+}"
+
+data = tp_data(list(outcomes=c(FALSE, TRUE, TRUE, FALSE, TRUE, FALSE, 
+                               FALSE, TRUE, TRUE, FALSE, TRUE, FALSE, 
+                               TRUE, FALSE, FALSE)))
+
+result <- compile_run_format(coin, data, 50000)
+
+myplot(result)
+
+```
+
+```{r}
+foo <- 
+"model function foo() => Real {
+  assume choice ~ Bernoulli(0.7);
+  if(choice){
+    assume p ~ Gaussian(-2.0, 1.0);
+    return p;
+  }
+  else{
+    assume p ~ Gaussian(3.0, 1.0);
+    return p;
+  }
+}"
+
+result <- compile_run_format(foo, no_data, 40000)
+
+myplot(result)
+
+```
+
+### Task
+
+Try to run the model above using less data, and with another prior, e.g., 
+using Beta. How is the change of prior affecting the result? 
+What is the effect of the prior if you have a large number of observations?
+
+## Exercise 1: Recursively Defined Models
+
+**Geometric distribution:** X number of Bernoulli trials needed to get one 
+success.\
+**Parameter:** probability of success (0 < p ≤ 1)\
+**Support:** x number of trials, (x ∈ {1,2,3,…})
+
+```{r}
+geometric <- 
+"model function geometric(p : Real) => Int {
+  assume cont ~ Bernoulli(p);
+  if cont {
+    return 1;
+  }
+  return 1 + geometric(p);
+}"
+
+data = tp_data(list(p=0.5))
+
+result <- compile_run_format(geometric, data, 10000)
+
+ggplot(result, aes(x = samples, weight = weights)) +
+    geom_histogram(bins = 100, fill = "skyblue", color = "white") +
+    theme_minimal()
+```
+
+## Exercise 2: A Graphical Model
+
+$\alpha \sim \text{Exponential}(1)$\
+$\beta \sim \text{Gamma}(0.1, 1)$\
+$\theta_i \sim \text{Gamma}(\alpha, \beta)\quad i = 1, \ldots, N$\
+$y_i \sim \text{Poisson}(\theta_i t_i) \quad i = 1, \ldots, N$
+
+Implement this graphical model and infer $\alpha$.
+
+```{r}
+pump <- 
+"model function pump(y : Int[], t : Real[]) => Real {
+  assume alpha ~ Exponential(1.0);
+  assume beta ~ Gamma(0.1, 1.0);
+  for i in 1 to (length(y)) {
+    assume theta ~ Gamma(alpha, beta);
+    observe y[i] ~ Poisson(theta * t[i]);
+  }
+  return alpha;
+}"
+
+data = tp_data(list(y=c(5, 1, 14, 3, 19, 1, 1, 4, 22),
+                    t=c(94.3, 15.7, 62.9, 126, 5.24, 31.4, 1.05, 2.1, 10.5)))
+
+result <- compile_run_format(pump, data, 1000000)
+
+myplot(result)
+```
+
+## Exercise 3: Bayesian Linear Regression
+
+Suppose you have the following data: `length = [55, 57, 52, 64, 53, 64]` 
+and `age = [4, 10, 2, 17, 6, 20]`, where the tuple `(length[i], age[i])` 
+represents the length in cm and age inweeks for a baby. 
+Create a WebPPL/Stan script that infers a posterior distribution over the 
+length of six months old babies by using Bayesian linear regression of the 
+form $l_i \sim N(\alpha + \beta a_i, \gamma)$, where $N$ is the 
+normal distribution, $l_i$ the length, $a_i$ the age, and $\alpha$, $\beta$ 
+and $\gamma$ are random variables.
+
+```{r}
+linreg <- 
+"type LinRes =
+  | LinRes {alpha : Real, beta : Real, gamma : Real}
+
+model function linreg(lengths : Real[], ages : Real[]) => LinRes {
+  assume alpha ~ Uniform(0.0, 200.0);
+  assume beta ~ Uniform(0.0, 10.0);
+  assume gamma ~ Uniform(0.0, 100.0);
+  for i in 1 to (length(ages)) {
+    observe lengths[i] ~ Gaussian(alpha + beta * ages[i], gamma);
+  }
+  return LinRes {alpha = alpha, beta = beta, gamma = gamma};
+}"
+
+data = tp_data(list(lengths = c(55, 57, 52, 64, 53, 64),
+                    ages = c(4, 10, 2, 17, 6, 20)))
+particules <- 100000
+exe_path <- tp_compile(model = linreg, 
+                       method = "smc-apf", 
+                       particles = particules)
+res <- tp_run(compiled_model = exe_path, data = data, n_sweeps = 1)
+
+extract_info <- function(result, value) {
+  unlist(lapply(
+  seq(1,length(res[[1]]$samples)), 
+  function(x) {
+    tmp <- res[[1]]$samples[[x]]["__data__"]$`__data__`
+    tmp[value]
+  }
+ ))
+}
+
+df_alpha <- data.frame(samples=extract_info(res, "alpha"),
+                 weights=exp(as.numeric(unlist(res[[1]]$weights))))
+
+myplot(df_alpha)
+
+df_beta <- data.frame(samples=extract_info(res, "beta"),
+                 weights=exp(as.numeric(unlist(res[[1]]$weights))))
+
+myplot(df_beta)
+
+df_gamma <- data.frame(samples=extract_info(res, "gamma"),
+                 weights=exp(as.numeric(unlist(res[[1]]$weights))))
+
+myplot(df_gamma)
+```
