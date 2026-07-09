@@ -4,22 +4,8 @@
 \alias{tp_tempdir}
 \title{Temporary directory for running treeppl}
 \usage{
-tp_tempdir(temp_dir = NULL, sep = NULL, sub = NULL)
-}
-\arguments{
-\item{temp_dir}{NULL, or a path to be used; if NULL, R's \link[base:tempdir]{base::tempdir}
-is used.}
-
-\item{sep}{Better ignored; non-default values are passed to
-\link[base:normalizePath]{base::normalizePath}.}
-
-\item{sub}{Extension for defining a sub-directory within the directory
-defined by \link[base:tempdir]{base::tempdir}.}
-}
-\value{
-Normalized path with system-dependent terminal separator.
+tp_tempdir()
 }
 \description{
-\code{tp_tempdir} returns a normalized path for a temporary directory where the
-executables can read and write temporary files.
+Temporary directory for running treeppl
 }

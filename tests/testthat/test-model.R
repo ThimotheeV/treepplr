@@ -35,7 +35,8 @@ test_that("Test-model_2a : tp_compile model name", {
 
   model_right = system(paste0("find ", version, " -name crbd.tppl"), intern = T)
 
-  expect_equal(readr::read_file(model$path), readr::read_file(model_right))
+  expect_equal(readr::read_file(model$path),
+               readr::read_file(model_right))
 })
 
 test_that("Test-model_2b : tp_compile model path ", {

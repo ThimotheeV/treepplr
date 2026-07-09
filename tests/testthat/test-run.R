@@ -23,7 +23,13 @@ test_that("Test-run_1a : tp_run custom name", {
   compiled_model <- treepplr::tp_compile("crbd", method = "smc-apf", particles = 2)
   data <- treepplr::tp_data("crbd")
 
-  result <-treepplr::tp_run(compiled_model, data, sweeps = 1, out_file_name = "test_out", particles = 5)
+  result <- treepplr::tp_run(
+    compiled_model,
+    data,
+    sweeps = 1,
+    out_file_name = "test_out",
+    particles = 5
+  )
 
   expect_equal(5, length(result[[1]]$samples))
 })

@@ -75,7 +75,7 @@ tp_run <- function(compiled_model,
     options_to_string(options[["runtime"]]),
     paste(">", output_path)
   )
-  system(command)
+  tp_tpplc_call(command)
 
   # simple parsing
   #### change this? ####

@@ -8,14 +8,14 @@ cat(crayon::yellow("\nTest-data : Import and convert data.\n"))
 test_that("Test-data_1a : tp_data name", {
   cat("\tTest-data_1a \n")
 
-    version <- list.files("/tmp",
-                          pattern = paste0("treeppl-", TPPLC_VERSION),
-                          full.names = TRUE)
-    data_right <- system(paste0("find ", version, " -name testdata_coin.json"), intern = T)
+  version <- list.files("/tmp",
+                        pattern = paste0("treeppl-", TPPLC_VERSION),
+                        full.names = TRUE)
+  data_right <- system(paste0("find ", version, " -name testdata_coin.json"), intern = T)
 
-    data <- treepplr::tp_data("coin")
+  data <- treepplr::tp_data("coin")
 
-    expect_equal(readr::read_file(data), readr::read_file(data_right))
+  expect_equal(readr::read_file(data), readr::read_file(data_right))
 })
 
 test_that("Test-data_1a_bis : tp_data name", {
@@ -23,7 +23,8 @@ test_that("Test-data_1a_bis : tp_data name", {
 
   version <- unlist(strsplit(Sys.getenv("MCORE_LIBS"), "treeppl="))[2]
   if (!is.na(version)) {
-    data_right <- system(paste0("find ", version, " -name testdata_coin.json"), intern = T)
+    data_right <- system(paste0("find ", version, " -name testdata_coin.json"),
+                         intern = T)
 
     data <- treepplr::tp_data("coin")
 

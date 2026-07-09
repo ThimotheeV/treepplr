@@ -1,3 +1,30 @@
+tp_rootPath <- function() {
+  if (Sys.info()["sysname"] != "Windows") {
+    return("/tmp")
+  } else {
+    return("//wsl.localhost/Debian/tmp")
+  }
+}
+
+tp_tpplc_call <- function(options) {
+  tpplc_path <- tp_installing_treeppl()
+  if (Sys.info()["sysname"] != "Windows") {
+    cmd_opt <- system2(
+      command = tpplc_path,
+      args = options,
+      env = "LD_LIBRARY_PATH= ",
+      stdout = TRUE
+    )
+  } else {
+    cmdLine = paste("-c \"", tpplc_path, options, "\"")
+    cmd_opt <- system2(
+      command = BASH_PATH,
+      args = cmdLine,
+      stdout = TRUE)
+  }
+  cmd_opt
+}
+
 #' Platform-dependent treeppl self-contained installation
 #' @description
 #' `tp_installing_treeppl` will search for the local version tpplc associate
@@ -16,19 +43,16 @@ tp_installing_treeppl <- function(download = TRUE,
   if (Sys.getenv("TPPLC") != "") {
     tpplc_path <- Sys.getenv("TPPLC")
   } else{
-    if (Sys.info()['sysname'] == "Windows") {
-      # No self container for Windows, need to install it manually
-      "tpplc"
-    } else {
-      path_treeppl <-
-        list.files(
-          path = paste0(.libPaths()[1], "/treeppl/", TPPLC_VERSION),
-          full.names = TRUE
-        )
-    }
+    root_path <- tp_rootPath()
+    path_treeppl <-
+      list.files(
+        path = paste0(.libPaths()[1], "/treeppl/", TPPLC_VERSION),
+        full.names = TRUE
+      )
     # Test if tpplc is already here
-    tpplc_path <- paste0("/tmp/treeppl-", TPPLC_VERSION, "/tpplc")
-    if (!file.exists(tpplc_path)) {
+    # Use the directory as proxy for windows to be able to see something
+    tpplc_dirPath <- paste0(root_path, "/treeppl-", TPPLC_VERSION)
+    if (!dir.exists(tpplc_dirPath)) {
       if (download && length(path_treeppl) == 0) {
         tag <- tp_fp_fetch(keep_previous)
         path_treeppl <-
@@ -39,69 +63,73 @@ tp_installing_treeppl <- function(download = TRUE,
       }
       if (length(path_treeppl) != 0) {
         message("TreePPL initialisation ...please wait...")
-        utils::untar(path_treeppl, exdir = "/tmp", verbose = FALSE)
+        if (Sys.info()["sysname"] == "Windows") {
+          # WARNING Tim : Here the copy will fail if the tar is already in the Debian/tmp
+          # will avoid the tar error if treeppl already here
+          # NOT REALLY checking if tpplc is in place but proxy enough for now
+          if (file.copy(path_treeppl, root_path)) {
+            cmdLine <- paste0("/tmp/", basename(path_treeppl))
+            cmdLine <- paste("tar -xf", cmdLine, "-C /tmp")
+            cmdLine <- paste("-c \"", cmdLine, "\"")
+            system2(BASH_PATH, args = cmdLine)
+          }
+        } else {
+          utils::untar(path_treeppl, exdir = root_path, verbose = FALSE)
+        }
         message("TreePPL initialisation : Done")
       }
     }
+    tpplc_path <- paste0("/tmp/treeppl-", TPPLC_VERSION, "/tpplc")
   }
   tpplc_path
 }
 
 # Fetch the associate version of TreePPL if needed
 tp_fp_fetch <- function(keep_previous = FALSE) {
-  if (Sys.info()["sysname"] == "Windows") {
-    # no self container for Windows, need to install it manually
-    "-1"
+  # Check for Linux
+  if (Sys.info()["sysname"] == "Linux" ||
+      Sys.info()["sysname"] == "Windows") {
+    # assets[[2]] because releases are in alphabetical order (1 = Mac, 2 = Linux)
+    name <- paste0("treeppl-", TPPLC_VERSION, "-x86_64-linux.tar.gz")
   } else {
-    # Check for Linux
-    if (Sys.info()["sysname"] == "Linux") {
-      # assets[[2]] because releases are in alphabetical order (1 = Mac, 2 = Linux)
-      name <- paste0("treeppl-", TPPLC_VERSION, "-x86_64-linux.tar.gz")
-    } else {
-      name <- paste0("treeppl-", TPPLC_VERSION, "-aarch64-darwin.tar.gz")
-    }
+    name <- paste0("treeppl-", TPPLC_VERSION, "-aarch64-darwin.tar.gz")
+  }
 
-    url <- paste0(
-      "https://github.com/treeppl/treeppl/releases/download/v",
-      TPPLC_VERSION,
-      "/",
-      name
-    )
-    # local repository
-    file_name <- list.files(
-      path = paste0(.libPaths()[1], "/treeppl/", TPPLC_VERSION),
-      full.names = TRUE
-    )
-    # download file if file_name is empty
-    if (length(file_name) == 0) {
-      if (!keep_previous) {
-
-      }
-      # create destination folder if treeppl dir doesn't exist
-      dest_folder <- paste0(.libPaths()[1], "/treeppl")
-      if (!keep_previous) {
-        system(
-          paste("rm -rf", dest_folder),
-          ignore.stdout = FALSE,
-          ignore.stderr = FALSE
-        )
-      }
+  url <- paste0(
+    "https://github.com/treeppl/treeppl/releases/download/v",
+    TPPLC_VERSION,
+    "/",
+    name
+  )
+  # local repository
+  file_name <- list.files(path = paste0(.libPaths()[1], "/treeppl/", TPPLC_VERSION),
+                          full.names = TRUE)
+  # download file if file_name is empty
+  if (length(file_name) == 0) {
+    # create destination folder if treeppl dir doesn't exist
+    dest_folder <- paste0(.libPaths()[1], "/treeppl")
+    if (!keep_previous) {
       system(
-        paste("mkdir", dest_folder),
+        paste("rm -rf", dest_folder),
         ignore.stdout = FALSE,
         ignore.stderr = FALSE
       )
-      # create destination folder if version dir doesn't exist
-      version_dir <- paste(dest_folder, TPPLC_VERSION, sep = "/")
-      system(
-        paste("mkdir", version_dir),
-        ignore.stdout = TRUE,
-        ignore.stderr = TRUE
-      )
-      # download
-      fn <- paste(version_dir, name, sep = "/")
-      curl::curl_download(url, destfile = fn, quiet = FALSE)
     }
+    system(
+      paste("mkdir", dest_folder),
+      ignore.stdout = FALSE,
+      ignore.stderr = FALSE
+    )
+    # create destination folder if version dir doesn't exist
+    version_dir <- paste(dest_folder, TPPLC_VERSION, sep = "/")
+    system(
+      paste("mkdir", version_dir),
+      ignore.stdout = TRUE,
+      ignore.stderr = TRUE
+    )
+    # download
+    fn <- paste(version_dir, name, sep = "/")
+    curl::curl_download(url, destfile = fn, quiet = FALSE)
   }
   TPPLC_VERSION
 }
@@ -109,36 +137,17 @@ tp_fp_fetch <- function(keep_previous = FALSE) {
 #' Temporary directory for running treeppl
 #'
 #' @description
-#' `tp_tempdir` returns a normalized path for a temporary directory where the
-#' executables can read and write temporary files.
 #'
-#' @param temp_dir NULL, or a path to be used; if NULL, R's [base::tempdir]
-#' is used.
-#' @param sep Better ignored; non-default values are passed to
-#' [base::normalizePath].
-#' @param sub Extension for defining a sub-directory within the directory
-#' defined by [base::tempdir].
 #'
-#' @return Normalized path with system-dependent terminal separator.
+#' @return
 #' @export
 
-tp_tempdir <- function(temp_dir = NULL,
-                       sep = NULL,
-                       sub = NULL) {
-  if (is.null(sep)) {
-    sep <- sep()
-    if (is.null(temp_dir))
-      temp_dir <- tempdir()
-    temp_dir <- normalizePath(temp_dir, sep)
-    if (substring(temp_dir, nchar(temp_dir)) != sep) {
-      temp_dir <- paste0(temp_dir, sep)
-    }
-    if (!is.null(sub))
-      temp_dir <- paste0(temp_dir, sub, sep)
-    if (!dir.exists(temp_dir))
-      dir.create(temp_dir)
-    temp_dir
+tp_tempdir <- function() {
+  tmp <- paste0(tp_rootPath(), "/treepplTmp/")
+  if(!dir.exists(tmp)) {
+    dir.create(tmp)
   }
+  tmp
 }
 
 # Platform-dependent separator character
@@ -153,8 +162,9 @@ sep <- function() {
 #' @return A list of model names.
 #' @export
 tp_model_library <- function() {
+  root_path <- tp_rootPath()
   # make sure you get the appropriate version if you have more than one treeppl folder in the tmp
-  fd <- list.files("/tmp",
+  fd <- list.files(root_path,
                    pattern = paste0("treeppl-", TPPLC_VERSION),
                    full.names = TRUE)
   # go to the right treeppl folder, whatever it is called
@@ -194,9 +204,12 @@ tp_find <- function(model_name, ext) {
       full.names = TRUE
     )
   } else {
-    fd <- list.files("/tmp",
-                     pattern = paste0("treeppl-", TPPLC_VERSION),
-                     full.names = TRUE)
+    root_path <- tp_rootPath()
+    fd <- list.files(
+      root_path,
+      pattern = paste0("treeppl-", TPPLC_VERSION),
+      full.names = TRUE
+    )
     fd <- list.files(fd, pattern = "treeppl", full.names = TRUE)
     fd <- paste0(fd, "/lib/mcore/treeppl/models")
     # path to the required model

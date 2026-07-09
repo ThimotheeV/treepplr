@@ -22,19 +22,13 @@ tpplcCompileOptions <- c(
 #' @returns A data frame with the output from the compiler's help <tpplc --help>
 #'
 tp_compile_options <- function() {
-  tpplc_path <- tp_installing_treeppl()
   # treeppl options
-  cmd_opt <- system2(
-    command = tpplc_path,
-    args = "--help",
-    env = "LD_LIBRARY_PATH= ",
-    stdout = TRUE
-  )
+  cmd_opt <- tp_tpplc_call("--help")
 
   # Preparing the output #
 
   # find the line containing "Options:"
-  x <- which(cmd_opt == "Options:")
+  x <- which(cmd_opt == "Compile options:")
   # extract everything after that line
   cmd_opt <- cmd_opt[(x + 1):length(cmd_opt)]
   cmd_opt <- trimws(cmd_opt)
@@ -145,13 +139,12 @@ compilation <- function(path, args_str) {
   options <- paste("--output", output_path, args_str)
 
   # Preparing the command line program
-  tpplc_path <- tp_installing_treeppl()
-  command <- paste(tpplc_path, path, options)
+  command <- paste(path, options)
 
   # Compile program
   # Empty LD_LIBRARY_PATH from R_env for this command specifically
   # due to conflict with internal env from treeppl self-contained
-  res <- system(paste0("LD_LIBRARY_PATH= ", command), intern = FALSE)
+  res <- tp_tpplc_call(command)
   if (res == 1L) {
     stop("Compilation failed")
   }
