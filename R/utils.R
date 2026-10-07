@@ -153,23 +153,9 @@ sep <- function() {
 #' @return A list of model names.
 #' @export
 tp_model_library <- function() {
-  tp_installing_treeppl()
-  # make sure you get the appropriate version if you have more than one treeppl folder in the tmp
-  fd <- list.files("/tmp",
-                   pattern = paste0("treeppl-", TPPLC_VERSION),
-                   full.names = TRUE)
-  # go to the right treeppl folder, whatever it is called
-  fd <- list.files(fd, pattern = "treeppl", full.names = TRUE)
-  # add the rest of the path
-  fd <- paste0(fd, "/lib/mcore/treeppl/models")
-  # model names
-  mn <- list.files(fd,
-                   full.names = TRUE,
-                   recursive = TRUE,
-                   pattern = "\\.tppl$")
+  mn <- tp_find("","tppl")
   subcategory <- grepl(".*models/([^/]+)/([^/]+)/([^/]+)\\.tppl$", mn)
   no_sub <- mn[!subcategory]
-
   # results in a data frame
   rs <- data.frame(
     "category" = sub(".*models/([^/]+)/.*", "\\1", no_sub),

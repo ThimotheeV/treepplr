@@ -2,16 +2,48 @@
 % Please edit documentation in R/post_treatment.R
 \name{tp_mcmc_convergence}
 \alias{tp_mcmc_convergence}
-\title{Check for convergence across multiple MCMC runs.}
+\title{Assess MCMC convergence for a TreePPL analysis}
 \usage{
 tp_mcmc_convergence(treeppl_out)
 }
 \arguments{
-\item{treeppl_out}{a data frame outputted by \code{\link[=tp_parse_mcmc]{tp_parse_mcmc()}}.}
+\item{treeppl_out}{A tibble produced by \code{tp_parse_mcmc()}, in either long
+or wide format.}
 }
 \value{
-Gelman and Rubin's convergence diagnostic
+A tibble with one row per parameter, containing:
+\describe{
+\item{parameter}{Parameter name.}
+\item{ess}{Effective sample size, pooled across all runs.}
+\item{rhat_upper}{Upper limit of the Gelman-Rubin R-hat statistic.
+Only computed when \code{treeppl_out} contains more than one run;
+otherwise \code{NA}, with a message explaining why.}
+}
 }
 \description{
-Check for convergence across multiple MCMC runs.
+Computes per-parameter effective sample size (ESS) and, when multiple
+runs are available, the upper limit of the Gelman-Rubin potential scale
+reduction factor (R-hat), using the \pkg{coda} package.
+}
+\details{
+Output produced from an unnamed return type in TreePPL (\code{.tppl} file) is not
+supported and will raise an error, since there is no reliable way to
+distinguish multiple parameters.
+}
+\examples{
+\dontrun{
+
+# CRBD model using MCMC
+run_mcmc <- tp_run(
+sampler = tp_compile(model = "crbd", method = "mcmc", iterations = 10),
+data = tp_data(data_input = "crbd"),
+n_runs = 2,
+n_processes = 2
+)
+
+# tp_run() already returns the output of tp_parse_mcmc(), so we can call
+# tp_mcmc_convergence() directly:
+tp_mcmc_convergence(run_mcmc)
+}
+
 }

@@ -2,17 +2,51 @@
 % Please edit documentation in R/post_treatment.R
 \name{tp_parse_mcmc}
 \alias{tp_parse_mcmc}
-\title{Parse simple TreePPL json MCMC output}
+\title{Parse TreePPL MCMC output into a tidy data frame}
 \usage{
-tp_parse_mcmc(treeppl_out)
+tp_parse_mcmc(json_path, wide = TRUE)
 }
 \arguments{
-\item{treeppl_out}{a character vector giving the TreePPL json output
-produced by \link{tp_run} using an MCMC method.}
+\item{json_path}{The full path to the (MCMC) JSON file(s) produced by TreePPL.}
+
+\item{wide}{Logical. If \code{TRUE} (default), return the data frame in wide format,
+with one column per parameter. If \code{FALSE}, return the data frame in long format,
+with parameter names and values stored in \code{parameter}
+and \code{sample} columns.}
 }
 \value{
-A data frame with the output from inference in TreePPL.
+A tibble with one row per iteration, containing:
+\describe{
+\item{run}{Run index.}
+\item{parameter}{Parameter name, if present in the input JSON.}
+\item{sample}{Sampled value.}
+}
 }
 \description{
-\code{tp_parse_mcmc} takes TreePPL json MCMC output and returns a data.frame
+Converts JSON file(s) produced by an MCMC analysis in TreePPL into a
+single tidy tibble of samples, one row per iteration.
+}
+\examples{
+\dontrun{
+
+# Let's use a quick CRBD model as example
+run_mcmc <- tp_run(
+sampler = tp_compile(model = "crbd", method = "mcmc", iterations = 10),
+data = tp_data(data_input = "crbd"),
+n_runs = 2, # this will produce two JSON files as output
+n_processes = 2
+)
+
+# get the path to the output JSON file; note that the number of JSON
+# files produced is equal to n_runs specified above
+out_file <- list.files(
+  path = tp_tempdir(),
+  pattern = "out",
+  full.names = TRUE
+)
+
+# parse JSON to a tidy data frame
+tp_parse_mcmc(json_path = out_file)
+}
+
 }
